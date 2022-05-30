@@ -4,17 +4,13 @@
 
 
 import string
-from xml.etree.ElementTree import tostring
 
 
 def ReadTxt():
-    arg = open("test.txt","r")
+    arg = open("dados.txt","r")
     msg = []
     for linha in arg:
         msg.append(linha)
-       
-
-
     print(msg)
     arg.close()
     return msg
@@ -22,32 +18,38 @@ def ReadTxt():
 def CompressLzw(dic,msg):
     code = []
     n = 1
-    for i in range(len(msg[0])):
+    i = 0
+    while i < len(msg):
         for j in range(len(dic)):
-            if i < (len(msg[0]) - 1):
-                
+            # if i < (len(msg[0]) - 1):
+            if msg[i] == dic[j]:
 
-                if msg[0][i] == dic[j]:
+                n = n + 1
+                # dessa forma, o array msg vai de i até n
+                newMsg = msg[i:n]
+                print(newMsg)
+
+                # O try serve para garantir que a func index não retorne um erro
+                try:
+                    index_value = dic.index(newMsg)
+                except ValueError:
+                    index_value = -1  
+
+                if index_value != -1:
+                    code.append(index_value)
+                    print("achou")
                     n = n + 1
-                    newMsg = msg[0][i:n]
-                    print("N " + str(n))
-                    print("NewMsg " + newMsg)
-                    try:
-                        index_value = dic.index(newMsg)
-                    except ValueError:
-                        index_value = -1
-
-                    if index_value != -1:
-                        code.append(index_value)
-                    
-                    else:
-                        code.append(j)
-                        dic.append(newMsg)
-                        print(dic)
+                    i = i + 1
+                    break
+                
+                else:
+                    code.append(j)
+                    dic.append(newMsg)
+                    print(dic)
                         
 
 
-    
+        i = i + 1
     print(code)
 
 # LZW RESUMINDO
@@ -73,8 +75,9 @@ def CompressLzw(dic,msg):
 
 
 def main():
-    msg = ReadTxt()
+    # msg = ReadTxt()
     dic = ["A","B","C","D","R"]
+    msg = "ABRACADABRA"
     CompressLzw(dic, msg)
     
 
