@@ -1,91 +1,59 @@
-
-
-
-
-
 import string
+from pathlib import Path
+from struct import *
 
 
-def ReadTxt():
-    arg = open("dados.txt","r")
-    msg = []
-    for linha in arg:
-        msg.append(linha)
-    print(msg)
-    arg.close()
-    return msg
+class LZW:
+    def __init__(self, filename, k):
+        # initial dictionary is a list from 0 to 255
+        self.size = 256
+        self.dictionary = {chr(i): i for i in range(self.size)}
+        self.max_size = pow(2, k)
+        self.filename = filename
+        self.coded_msg = []
 
+    def compress(self):
+        file = open(Path(Path(__file__).parent, self.filename), encoding="latin-1")
+        msg = file.read()
+        previous = ""
 
-def DecompressLzw(dic,code):
-    for i in range(len(dic)):
+        for symb in msg:
+            current = previous + symb
+            if current in self.dictionary:
+                previous = current
+            else:
+                self.coded_msg.append(self.dictionary[previous])
+                if len(self.dictionary) <= self.max_size:
+                    self.dictionary[current] = self.size
+                    self.size += 1
+                previous = symb
+        if previous in self.dictionary:
+            self.coded_msg.append(self.dictionary[previous])
+        file.close()
 
-        pass
+    def save(self, output_name):
+        out = open(Path(Path(__file__).parent, output_name + ".lzw"), "wb")
+        for symb in self.coded_msg:
+            out.write(pack('>H', int(symb)))
+        out.close()
 
-
-def CompressLzw(dic,msg):
-    code = []
-    n = 1
-    i = 0
-    while i < len(msg):
-        for j in range(len(dic)):
-            # if i < (len(msg[0]) - 1):
-            if msg[i] == dic[j]:
-
-                
-                # dessa forma, o array msg vai de i até n
-                newMsg = msg[i:n]
-                print(newMsg)
-                n = n + 1
-                # O try serve para garantir que a func index não retorne um erro
-                try:
-                    index_value = dic.index(newMsg)
-                except ValueError:
-                    index_value = -1  
-
-                if index_value != -1:
-                    code.append(index_value)
-                    print("achou")
-                    n = n + 1
-                    i = i + 1
-                    break
-
-                else:
-                    code.append(j)
-                    dic.append(newMsg)
-                    print(dic)
-                        
-
-        i = i + 1
-    print(code)
 
 # LZW RESUMINDO
 # começa com o um dicionário inicial
 # lê o caracter
-#     ela está no dicionario? 
+#     ela está no dicionario?
 #         se sim:
 #             procura se a proxima letra mais ela está no dic
-#                 se sim: 
-#                     coloca o codigo 
+#                 se sim:
+#                     coloca o codigo
 #                 se não:
 #                     coloca o codigo apenas do caracter
 #                     add no dic
 #         se não:
 #         oxe, deveria estar no dic ERRO DIC
-   
 
 
-
-
-
-
-
-
-def main():
-    # msg = ReadTxt()
-    dic = ["a","b"]
-    msg = "aabababaaa"
-    CompressLzw(dic, msg)
-    
-
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    coder = LZW("corpus2.txt", 15)
+    coder.compress()
+    coder.save("awesome")
