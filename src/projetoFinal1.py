@@ -70,27 +70,53 @@ class LZW:
         file.close()
 
     def decompress(self, compressedMsgFile):
-        file = open(Path(Path(__file__).parent, compressedMsgFile),"rb")
-        file_object = open('sample.txt', 'wb')
-        msg = file.read()
-        print(msg)
-        previous= ""
-        aux =""
+        # file = open(Path(Path(__file__).parent, compressedMsgFile),"rb")
+        # file_object = open('sample.txt', 'w')
+        # msg = file.read()
+        # print(msg)
+        # previous= ""
+        # aux =""
 
         
-        for i in range(len(msg)):
-            current = msg[i] + previous
-            if current in self.dictionary:
-                previous = current
-            else:
-                aux = self.dictionary[current]
-                file_object.write(self.dictionary[current])
-                previous = msg[i]
-        if previous in self.dictionary: 
-                file_object.write(self.dictionary[previous])
-        file_object.close()
+        input_file = ("msgCompressed")           
+        maximum_table_size = pow(2,9)
+        file = open(input_file, "rb")
+        compressed_data = []
+        next_code = 6
+        decompressed_data = ""
+        string = ""
+
+        # Reading the compressed file.
+        while True:
+            rec = file.read(2)
+            if len(rec) != 2:
+                break
+            (data, ) = unpack('>H', rec)
+            compressed_data.append(data)
+
+        # Building and initializing the dictionary.
+        dictionary_size= 6
+        dictionary = {"a":0,"b":1,"c":2,"d":3,"r":4}
+
+        # iterating through the codes.
+        # LZW Decompression algorithm
+        for code in compressed_data:
+            if not (code in dictionary):
+                dictionary[code] = string + (string[0])
+            decompressed_data += dictionary[code]
+            if not(len(string) == 0):
+                dictionary[next_code] = string + (dictionary[code][0])
+                next_code += 1
+            string = dictionary[code]
+
+        # storing the decompressed string into a file.
+
+        output_file = (Path(Path(__file__).parent, "decompressed.txt" ), "w")
+        for data in decompressed_data:
+            output_file.write(data)
+            
+        output_file.close()
         file.close()
-        
 
                 
 
