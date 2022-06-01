@@ -2,6 +2,7 @@
 import string
 from pathlib import Path
 from struct import *
+import time
 
 # LZW RESUMINDO
 # começa com o um dicionário inicial
@@ -21,119 +22,111 @@ from struct import *
 # Ao utilizar o Formato "H" (unsigned short em C), estamos definindo usar 2 bytes para salvar cada pacote binário no arquivo
 # Ao utilizar o Formato "i" (int em C), estamos definindo usar 4 bytes para salvar cada pacote binário no arquivo
 
-class LZW:
-    def __init__(self, filename, k):
-        # initial dictionary is a list from 0 to 255
-        self.size = 256
-        self.dictionary = self.getDict(self.size)
-        # print(self.dictionary)
-        # self.dictionary = {"a":0,"b":1,"c":2,"d":3,"r":4}
-        self.max_size = pow(2, k)
-        self.filename = filename
-        self.coded_msg = []
-        self.decoded_msg = ""
+
+def get_dict(size_dic):
+    dictionary = {}
+    for i in range(size_dic):
+        dictionary[chr(i)] = i
+    # print(dictionary)
+    return dictionary
+
+
     
+# initial dictionary is a list from 0 to 255
+filename = "corpus.txt"
+compressed_name = "corpus_compressed"
+decompressed_name = "corpus_decompressed.txt"
+size = 256
+k = 14
+dictionary = get_dict(size)
+# print(self.dictionary)
+# self.dictionary = {"a":0,"b":1,"c":2,"d":3,"r":4}
+max_size = pow(2, k)
+coded_msg = []
+decoded_msg = ""
 
 
-    def getDict(self,size_dic):
-        dictionary = {}
-        for i in range(size_dic):
-            dictionary[chr(i)] = i
-        # print(dictionary)
-        return dictionary
+# Comprimir
+file = open(Path(Path(__file__).parent, filename), encoding="latin-1")
+msg = file.read()
+# print(msg)
+
+previous = ""
+
+print("Comprimindo arquivo...")
+start = time.time()
+for i in range(len(msg)):
+    current = msg[i] + previous
+    # print("current :")
+    # print(current)
+    if current in dictionary:
+        # print("ACHOU!")
+        previous = current
+        # print("previous:")
+        # print(previous)
+    else:
+        # print("Dicionario:")
+        # print(dictionary[previous])
+        coded_msg.append(dictionary[previous])
+        if len(dictionary) <= max_size:
+            dictionary[current] = size
+            size += 1
+        previous = msg[i]
+if previous in dictionary:
+    coded_msg.append(dictionary[previous])
+end = time.time()
+print("Codificado em ", round(end - start, 2), " s")
+# Salvar arquivo comprimido
+out = open(Path(Path(__file__).parent, compressed_name), "wb")
+for symb in coded_msg:
+    out.write(pack('>H', int(symb)))
+out.close()
+file.close()
+print("Arquivo comprimido salvo.")
 
 
-    def compress(self):
-        file = open(Path(Path(__file__).parent, self.filename), encoding="latin-1")
-        msg = file.read()
-        # print(msg)
+# Descomprimir
 
-        previous = "" 
+# Ler o arquivo comprimido
+file = open(Path(Path(__file__).parent, compressed_name), "rb")
+coded_msg = []
+print("Descomprimindo arquivo...")
+start = time.time()
+# Salvamos cada índice da mensagem codificada utilizando 2 bytes, assim precisamos ler cada 2 bytes do arquivo
+while True:
+    index = file.read(2)
+    if len(index) != 2:
+        break
+    (data,) = unpack('>H', index)
+    coded_msg.append(data)
+file.close()
 
-        for i in range(len(msg)):
-            current = msg[i] + previous
-            # print("current :")
-            # print(current)
-            if current in self.dictionary:
-                # print("ACHOU!")
-                previous = current
-                # print("previous:")
-                # print(previous)
-            else:
-                # print("Dicionario:")
-                # print(self.dictionary[previous])
-                self.coded_msg.append(self.dictionary[previous])
-                if len(self.dictionary) <= self.max_size:
-                    self.dictionary[current] = self.size
-                    self.size += 1
-                previous = msg[i]
-        if previous in self.dictionary:
-            self.coded_msg.append(self.dictionary[previous])
+# Reiniciar o dicionário
+size = 256
+dictionary = dict([(x, chr(x)) for x in range(size)])
 
-        # print("Codigo: ")
-        # print(self.coded_msg)
-        file.close()
+previous = ""
+next_index = 256
 
-    def decompress(self, compressedMsgFile):
+# Para cada índice da mensagem decodificada, verificar o seu valor no dicionário
+# Se não encontrar, inserir no dicionário
+for index in coded_msg:
+    if not (index in dictionary):
+        dictionary[index] = previous + (previous[0])
+    decoded_msg += dictionary[index]
+    if not (len(previous) == 0):
+        dictionary[next_index] = previous + (dictionary[index][0])
+        next_index += 1
+    previous = dictionary[index]
+end = time.time()
+print("Decodificado em ", round(end - start, 2), " s")
 
-        # Ler o arquivo comprimido
-        self.read_compressed(compressedMsgFile)
+# Resultado em "decompressed.txt"
+decompressed_file = open(Path(Path(__file__).parent, decompressed_name), "w")
+for data in decoded_msg:
+    decompressed_file.write(data)
 
-        # Reiniciar o dicionário
-        self.size = 256
-        self.dictionary = self.getDict(self.size)
+decompressed_file.close()
 
-        previous = ""
-        next_index = 256
+print("Arquivo descomprimido salvo.")
 
-        # Para cada índice da mensagem decodificada, verificar o seu valor no dicionário
-        # Se não encontrar, inserir no dicionário
-        for index in self.coded_msg:
-            if not (index in self.dictionary):
-                print(previous)
-                self.dictionary[index] = previous + (previous[0])
-            self.decoded_msg += self.dictionary[index]
-            if not(len(previous) == 0):
-                dictionary[next_index] = previous + (self.dictionary[index][0])
-                next_index += 1
-            previous = self.dictionary[index]
-
-        # Resultado em "decompressed.txt"
-        file = (Path(Path(__file__).parent, "decompressed.txt"), "w")
-        for data in decompressed_data:
-            file.write(data)
-            
-        file.close()
-
-    def save(self, output_name):
-        out = open(Path(Path(__file__).parent, output_name), "wb")
-        for symb in self.coded_msg:
-            out.write(pack('>H', int(symb)))
-        out.close()
-
-    def read_compressed(self, filename):
-        file = open(Path(Path(__file__).parent, filename), "rb")
-        self.coded_msg = []
-        # Salvamos cada índice da mensagem codificada utilizando 2 bytes, assim precisamos ler cada 2 bytes do arquivo
-        while True:
-            index = file.read(2)
-            if len(index) != 2:
-                break
-            (data,) = unpack('>H', index)
-            self.coded_msg.append(data)
-        file.close()
-
-
-
-
-if __name__ == '__main__':
-    k = 14
-    coder = LZW("corpus.txt", k)
-    print("Comprimindo arquivo...")
-    coder.compress()
-    coder.save("corpusCompressed")
-    print("Arquivo comprimido salvo.")
-
-    print("Descomprimindo arquivo...")
-    coder.decompress("corpusCompressed")
-    print("Arquivo descomprimido salvo.")
