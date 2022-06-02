@@ -30,6 +30,14 @@ def get_dict(size_dic):
     # print(dictionary)
     return dictionary
 
+def get_dict_dec(size_dic):
+    dictionary = {}
+    for i in range(size_dic):
+        dictionary[i] = chr(i)
+    # print(dictionary)
+    return dictionary
+
+
 
     
 # initial dictionary is a list from 0 to 255
@@ -103,7 +111,7 @@ file.close()
 
 # Reiniciar o dicionário
 size = 256
-dictionary = dict([(x, chr(x)) for x in range(size)])
+dictionary = get_dict_dec(size)
 
 previous = ""
 next_index = 256
