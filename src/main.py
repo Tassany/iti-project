@@ -31,14 +31,11 @@ def get_dict(size_dic):
     return dictionary
 
 
-    
 # initial dictionary is a list from 0 to 255
-# filename = "corpus.txt"
 filename = "disco.mp4"
-# compressed_name = "corpus_compressed"
-compressed_name = "disco_compressed"
-# decompressed_name = "corpus_decompressed.txt"
-decompressed_name = "disco_decompressed.mp4"
+name, ext = filename.split(".")
+compressed_name = name + "_compressed"
+decompressed_name = name + "_decompressed" + "." + ext
 size = 256
 k = 16
 dictionary = get_dict(size)
@@ -125,7 +122,7 @@ end = time.time()
 print("Decodificado em ", round(end - start, 2), " s")
 
 # Resultado em "decompressed.txt"
-decompressed_file = open(Path(Path(__file__).parent, decompressed_name), "w")
+decompressed_file = open(Path(Path(__file__).parent, decompressed_name), "w", encoding="latin-1")
 for data in decoded_msg:
     decompressed_file.write(data)
 
