@@ -2,6 +2,7 @@
 import string
 from pathlib import Path
 from struct import *
+import glob
 import time
 import os
 
@@ -13,27 +14,58 @@ def get_dict(size_dic):
     # print(dictionary)
     return dictionary
 
-def lzw(filepath="corpus.txt"):
-    # filepath = "~/Documentos/Old/Documentos/Projetos/projeto_iti/iti-project/src/knn_classifier/knn.py"
-    target = Path(filepath)
-    filename = target.name
-    dirname = target.parent.name
-    name, ext = filename.split(".")
-    compressed_name = name + "_lzw"
+
+def lzw_train(train_data):
     size = 256
     k = 16
     dictionary = get_dict(size)
     max_size = pow(2, k)
+    for img in train_data:
+        target_path = Path(img)
+
+        coded_msg = []
+
+        # compress
+        file = open(target_path, encoding="latin-1")
+        msg = file.read()
+
+        previous = ""
+
+        print("compressing...")
+        start = time.time()
+        for i in range(len(msg)):
+            current = msg[i] + previous
+            if current in dictionary:
+                previous = current
+            else:
+                coded_msg.append(dictionary[previous])
+                if len(dictionary) <= max_size:
+                    dictionary[current] = size
+                    size += 1
+                previous = msg[i]
+        if previous in dictionary:
+            coded_msg.append(dictionary[previous])
+        end = time.time()
+        print("compressed in ", round(end - start, 2), " s")
+        file.close()
+
+    return {"label": train_data[0].split("/")[1], "dictionary": dictionary}
+
+
+def lzw_test(dictionary, test_sample):
+    target = Path(test_sample)
+    size = len(dictionary)
+    k = 16
+    max_size = pow(2, k)
     coded_msg = []
 
     # compress
-    print(target.resolve())
     file = open(target, encoding="latin-1")
     msg = file.read()
 
     previous = ""
 
-    print("Comprimindo arquivo...")
+    print("compressing...")
     start = time.time()
     for i in range(len(msg)):
         current = msg[i] + previous
@@ -48,26 +80,16 @@ def lzw(filepath="corpus.txt"):
     if previous in dictionary:
         coded_msg.append(dictionary[previous])
     end = time.time()
-    print("Codificado em ", round(end - start, 2), " s")
+    print("compressed in ", round(end - start, 2), " s")
 
-    out_path = Path("compressed_data", dirname, compressed_name)
-    out_path.parent.mkdir(parents=True, exist_ok=True)  # creates directory if it does not exist
-    out = open(out_path, "wb")
-
-    for symb in coded_msg:
-        out.write(pack('>H', int(symb)))
-
-    out.close()
     file.close()
-    print("Arquivo comprimido salvo.")
-    # get outfile size in bytes
-    size = os.stat(out_path).st_size
-    return size, len(coded_msg)
+    return len(coded_msg)
 
 
 if __name__ == '__main__':
-    filepath = "/home/matheusmelo/Documentos/Old/Documentos/Projetos/projeto_iti/iti-project/src/knn_classifier/data/1/1.pgm"
-    print(lzw(filepath))
+    pass
+    # filepath = "/home/matheusmelo/Documentos/Old/Documentos/Projetos/projeto_iti/iti-project/src/knn_classifier/data/1/1.pgm"
+    # print(lzw(filepath))
     # target = Path(filepath)
     # filename = target.name
     # dirname = target.parent.name

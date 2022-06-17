@@ -1,30 +1,53 @@
+import random
 import numpy as np
-from collections import Counter
+from lzw import lzw_train, lzw_test
+import glob
+random.seed(1234)
 
-# metric function
-def euclidean_distance(x1, x2):
-    return np.sqrt(np.sum(x1-x2)**2)
 
-class KNN:
-    def __init__(self, k=3):
-        self.k = k
+# returns predicted label, a value between 1-40
+def predict(trained_data, x):
+    compressed_sizes = []
+    for dictio in trained_data:
+        size = lzw_test(dictio["dictionary"], x)
+        compressed_sizes.append([size, dictio["label"]])
+    compressed_sizes = np.array(compressed_sizes)
+    return compressed_sizes[np.argmin(compressed_sizes[:,0])][1]
 
-    def fit(self, X, y):
-        self.X_train = X
-        self.y_train = y
+directories = glob.glob("data/*")
+train = [[] for _ in range(len(directories))]
+x_test = []
+y_test = []
 
-    def predict(self, X):
-        predicted_labels = [self._predict(x) for x in X]
-        return np.array(predicted_labels)
+# populate data
+for i, dir in enumerate(directories):
+    images = glob.glob(dir + "/*")
+    # randomize test samples
+    random.shuffle(images)
+    # define dirname as label
+    label = dir.split("/")[1]
+    # append train data
+    for img in images[:9]:
+        train[i].append(img)
+    # append test data
+    x_test.append(images[9])
+    y_test.append(label)
 
-    def _predict(self, x):
-        # compute distances
-        distances = [euclidean_distance(x, x_train) for x_train in self.X_train]
-        # get k nearest samples, and their labels
-        k_indexes = np.argsort(distances)[:self.k]
-        k_nearest_labels = [self.y_train[i] for i in k_indexes]
-        # majority vote, get most common class label
-        # Counter().most common returns a list of tuples
-        # where the first element of the tuple is the label, and the second is its frequence: [(label, frequence)]
-        most_common = Counter(k_nearest_labels).most_common(1)
-        return most_common[0][0]
+# train
+trained_data = []
+for train_sample in train:
+    trained_data.append(lzw_train(train_sample))
+
+# prediction
+predictions = [predict(trained_data=trained_data, x=x) for x in x_test]
+print("predictions")
+print(predictions)
+print("y_test")
+print(y_test)
+
+predictions = np.array(predictions)
+y_test = np.array(y_test)
+accuracy = np.sum(predictions == y_test) / len(y_test)
+
+print("accuracy")
+print(accuracy)
