@@ -2,6 +2,7 @@ import random
 import numpy as np
 from lzw import lzw_train, lzw_test
 import glob
+import time
 random.seed(1234)
 
 
@@ -13,6 +14,7 @@ def predict(trained_data, x):
         compressed_sizes.append([size, dictio["label"]])
     compressed_sizes = np.array(compressed_sizes)
     return compressed_sizes[np.argmin(compressed_sizes[:,0])][1]
+
 
 directories = glob.glob("data/*")
 train = [[] for _ in range(len(directories))]
@@ -33,6 +35,9 @@ for i, dir in enumerate(directories):
     x_test.append(images[9])
     y_test.append(label)
 
+print("Starting...")
+start = time.time()
+
 # train
 trained_data = []
 for train_sample in train:
@@ -40,6 +45,10 @@ for train_sample in train:
 
 # prediction
 predictions = [predict(trained_data=trained_data, x=x) for x in x_test]
+
+end = time.time()
+print("Finished in ", round(end - start, 2), " s")
+
 print("predictions")
 print(predictions)
 print("y_test")
